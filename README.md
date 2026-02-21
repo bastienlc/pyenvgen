@@ -1,46 +1,104 @@
 # pyenvgen
 
-Python tool to generate environment variables from schemas.
+> **Warning:** This project was vibe coded and is in early development. Expect breaking changes and incomplete features. Contributions are welcome!
 
-1. Schemas are defined in a YAML file. They include validation rules based on [marshmallow](https://github.com/marshmallow-code/marshmallow) and custom generation rules.
-2. Existing environment variables are read from the storage passed as argument.
-3. The tool reads the schema and generates environment variables according to the defined schemas (allowing values to be overridden by existing environment variables or command-line arguments). The resulting environment is validated against the schemas.
-4. The generated environment is stored in the specified storage format (e.g., .env file, JSON file, etc.).
+Python tool to generate environment variables from YAML schemas.
 
-## Basic usage
+1. Define variables in a YAML schema, including types, generation rules, and validation constraints.
+2. Existing values are loaded from the chosen storage backend.
+3. Values are generated (with existing/overridden values taking precedence), then validated.
+4. The final environment is written back to the storage backend.
+
+## Installation
 
 ```bash
-pyenvgen examples/basic.yaml
+pip install pyenvgen
 ```
 
-## Documentation
+## Usage
 
-### Validation Rules
+```bash
+pyenvgen <schema.yaml> [-s STORAGE] [-o KEY=VALUE ...] [--force]
+```
 
-Validation rules are a simple YAML representation of the validation rules supported by the [marshmallow](https://github.com/marshmallow-code/marshmallow) library.
+| Flag               | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| `-s`, `--storage`  | Storage backend (default: `stdout`)                    |
+| `-o`, `--override` | Override a value via `KEY=VALUE` (repeatable)          |
+| `--force`          | Regenerate all values, ignoring existing stored values |
 
-### Generation Rules
+```bash
+# Print to stdout
+pyenvgen examples/basic.yaml
 
-All generation rules support **Jinja2 templating**: any string field in a rule
-is rendered as a Jinja2 template against the values already generated so far,
-before the rule executes.
+# Write to a .env file
+pyenvgen examples/basic.yaml -s .env
 
-For example, you can write `value: "postgres://{{ HOST }}:{{ PORT }}/app"` in
-a `default` rule, or embed `{{ VAR }}` inside a `command` string.
+# Override a value
+pyenvgen examples/basic.yaml -o APP_PORT=9000
+```
 
-- `default`: Use a default value specified in the schema.
-- `command`: Generate the value by executing a shell command and using its output.
-- `openssl`: Use any OpenSSL command to generate the value (uses [pyopenssl](https://github.com/pyca/pyopenssl)). Arguments for the OpenSSL command can be specified in the schema.
+## Schema format
 
-### Storage Rules
+```yaml
+variables:
+  MY_VAR:
+    type: str          # str | int | float | bool (default: str)
+    description: "..."
+    internal: false    # default: false
+    generation:
+      rule: default
+      value: "hello"
+    validation:
+      length:
+        min: 1
+        max: 128
+```
 
-The generated environment variables can be stored in various formats. For now the supported formats are:
-- `stdout`: Print the generated environment variables to standard output.
-- `.env`: Write the generated environment variables to a .env file.
-- `json`: Write the generated environment variables to a JSON file.
-- `toml`: Write the generated environment variables to a TOML file.
-- `yaml`: Write the generated environment variables to a YAML file.
+### Variable types
 
-### Special Properties
+`str`, `int`, `float`, `bool`
 
-- `internal`: If set to `true`, the generated environment variable will not be included in the output, but it can still be used as a reference in other generation rules (e.g., in templates or commands).
+### Generation rules
+
+All string fields in generation rules are rendered as **Jinja2 templates** against already-generated values before execution.
+
+- **`default`** – use a static value (supports Jinja2, e.g. `"postgres://{{ HOST }}:{{ PORT }}/app"`)
+- **`command`** – run a shell command and capture its stdout
+- **`openssl`** – generate cryptographic material via the [`cryptography`](https://github.com/pyca/cryptography) package
+
+#### `openssl` commands
+
+| Command   | Description                         | Key args                                                                                    |
+| --------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| `rsa`     | RSA private key (PEM or DER base64) | `key_size` (default 2048), `encoding` (`pem`\|`der_b64`)                                    |
+| `ec`      | EC private key                      | `curve` (`secp256r1`\|`secp384r1`\|`secp521r1`\|`secp256k1`), `encoding` (`pem`\|`der_b64`) |
+| `ed25519` | Ed25519 private key                 | `encoding` (`pem`\|`raw_b64`)                                                               |
+| `x25519`  | X25519 private key                  | `encoding` (`pem`\|`raw_b64`, default `raw_b64`)                                            |
+| `fernet`  | URL-safe base64 Fernet key          | —                                                                                           |
+| `random`  | Random bytes                        | `length` (default 32), `encoding` (`hex`\|`base64`\|`base64url`)                            |
+
+### Validation rules
+
+Backed by [marshmallow](https://github.com/marshmallow-code/marshmallow).
+
+| Rule     | Applies to     | Fields                                         |
+| -------- | -------------- | ---------------------------------------------- |
+| `length` | `str`          | `min`, `max`                                   |
+| `range`  | `int`, `float` | `min`, `max`, `min_inclusive`, `max_inclusive` |
+| `one_of` | any            | `choices: [...]`                               |
+| `regexp` | any            | `pattern`                                      |
+
+### Storage backends
+
+| Value    | Description              |
+| -------- | ------------------------ |
+| `stdout` | Print to standard output |
+| `.env`   | Read/write a `.env` file |
+| `json`   | Read/write a JSON file   |
+| `toml`   | Read/write a TOML file   |
+| `yaml`   | Read/write a YAML file   |
+
+### Special properties
+
+- **`internal: true`** – the variable is generated and available to Jinja2 templates but excluded from the output.
