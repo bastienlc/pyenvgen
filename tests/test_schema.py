@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from pyenvgen.schema import (
     DefaultGeneration,
     EnvSchema,
-    ValidationRules,
     VarType,
     VariableSchema,
 )
