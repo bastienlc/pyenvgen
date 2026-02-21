@@ -129,7 +129,6 @@ class VariableSchema(BaseModel):
     type: VarType = VarType.STR
     generation: GenerationRule
     validation: ValidationRules = Field(default_factory=ValidationRules)
-    required: bool = True
     internal: bool = False
     description: str = ""
 

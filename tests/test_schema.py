@@ -15,7 +15,6 @@ class TestVariableSchema:
     def test_minimal_variable(self) -> None:
         var = VariableSchema(generation=DefaultGeneration(value="hello"))
         assert var.type == VarType.STR
-        assert var.required is True
         assert var.internal is False
         assert var.generation.value == "hello"
 
