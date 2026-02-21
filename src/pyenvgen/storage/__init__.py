@@ -44,8 +44,7 @@ def get_storage(backend: str) -> StorageBackend:
 
     if backend not in backends:
         raise ValueError(
-            f"Unknown storage backend '{backend}'. "
-            f"Available: {', '.join(backends)}"
+            f"Unknown storage backend '{backend}'. Available: {', '.join(backends)}"
         )
 
     return backends[backend]

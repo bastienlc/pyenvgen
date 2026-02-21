@@ -62,3 +62,59 @@ variables:
     validation:
       length:
         min: 8
+
+  # --- command rule: run a shell command and capture stdout ---
+
+  GIT_SHA:
+    type: str
+    description: "Short git commit SHA of the current HEAD"
+    generation:
+      rule: command
+      command: "git rev-parse --short HEAD"
+
+  # --- template rule: compose values from already-generated variables ---
+
+  DATABASE_URL:
+    type: str
+    description: "Full database connection URL built from host and port"
+    generation:
+      rule: template
+      template: "postgres://app:password@{{ APP_NAME }}:5432/app"
+
+  # --- openssl rule: generate cryptographic material ---
+
+  FERNET_KEY:
+    type: str
+    description: "Fernet symmetric encryption key"
+    generation:
+      rule: openssl
+      command: fernet
+
+  SESSION_SECRET:
+    type: str
+    description: "32-byte random hex session secret"
+    generation:
+      rule: openssl
+      command: random
+      args:
+        length: 32
+        encoding: hex
+
+  TLS_PRIVATE_KEY:
+    type: str
+    description: "EC P-256 private key in PEM format"
+    internal: true
+    generation:
+      rule: openssl
+      command: ec
+      args:
+        curve: secp256r1
+        encoding: pem
+
+  WG_PRIVATE_KEY:
+    type: str
+    description: "WireGuard-compatible X25519 private key (base64-encoded raw bytes)"
+    internal: true
+    generation:
+      rule: openssl
+      command: x25519
