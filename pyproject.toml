@@ -1,0 +1,20 @@
+[project]
+name = "pyenvgen"
+version = "0.1.0"
+description = "Python tool to generate environment variables from schemas"
+readme = "README.md"
+authors = [
+    { name = "bastienlc", email = "78959054+bastienlc@users.noreply.github.com" },
+]
+requires-python = ">=3.11"
+dependencies = ["pyyaml>=6.0", "pydantic>=2.0", "marshmallow>=3.0"]
+
+[project.scripts]
+pyenvgen = "pyenvgen.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.20,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest>=9.0.2"]

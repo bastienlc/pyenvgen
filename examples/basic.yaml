@@ -1,0 +1,64 @@
+# Example pyenvgen schema
+# Demonstrates the 'default' generation rule with various types and validations.
+
+variables:
+  APP_NAME:
+    type: str
+    description: "Name of the application"
+    generation:
+      rule: default
+      value: "my-app"
+    validation:
+      length:
+        min: 1
+        max: 64
+
+  APP_PORT:
+    type: int
+    description: "Port the application listens on"
+    generation:
+      rule: default
+      value: "8080"
+    validation:
+      range:
+        min: 1
+        max: 65535
+
+  DEBUG:
+    type: bool
+    description: "Enable debug mode"
+    generation:
+      rule: default
+      value: "false"
+
+  LOG_LEVEL:
+    type: str
+    description: "Logging level"
+    generation:
+      rule: default
+      value: "INFO"
+    validation:
+      one_of:
+        choices: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+  RATE_LIMIT:
+    type: float
+    description: "Request rate limit (req/s)"
+    generation:
+      rule: default
+      value: "100.0"
+    validation:
+      range:
+        min: 0.1
+        max: 10000.0
+
+  SECRET_KEY:
+    type: str
+    description: "Internal secret used for signing — not exported"
+    internal: true
+    generation:
+      rule: default
+      value: "change-me-in-production"
+    validation:
+      length:
+        min: 8
