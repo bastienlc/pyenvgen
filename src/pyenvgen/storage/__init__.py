@@ -24,6 +24,8 @@ from pyenvgen.storage.yaml import YamlStorage
 class StorageBackend(Protocol):
     """Protocol that all storage backends must satisfy."""
 
+    def load(self) -> dict[str, str]: ...
+
     def store(
         self,
         values: dict[str, Any],

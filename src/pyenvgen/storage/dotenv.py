@@ -25,6 +25,18 @@ class DotEnvStorage:
     def __init__(self, path: Path) -> None:
         self.path = path
 
+    def load(self) -> dict[str, str]:
+        """Return existing key-value pairs from the .env file."""
+        if not self.path.exists():
+            return {}
+        result: dict[str, str] = {}
+        for line in self.path.read_text().splitlines():
+            m = _DOTENV_LINE_RE.match(line)
+            if m:
+                key = m.group(1)
+                result[key] = line[m.end() :]
+        return result
+
     def store(
         self,
         values: dict[str, Any],

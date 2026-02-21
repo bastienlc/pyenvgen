@@ -34,3 +34,25 @@ class TestTomlStorage:
         data = tomllib.loads(p.read_text())
         assert "PUB" in data
         assert "PRIV" not in data
+
+
+class TestTomlLoad:
+    def test_load_nonexistent_file(self, tmp_path: Path) -> None:
+        assert TomlStorage(tmp_path / "out.toml").load() == {}
+
+    def test_load_empty_file(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.toml"
+        p.write_text("")
+        assert TomlStorage(p).load() == {}
+
+    def test_load_values_as_strings(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.toml"
+        p.write_bytes(tomli_w.dumps({"A": "hello", "B": "42"}).encode())
+        result = TomlStorage(p).load()
+        assert result == {"A": "hello", "B": "42"}
+
+    def test_roundtrip_store_then_load(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.toml"
+        s = schema("X", "Y")
+        TomlStorage(p).store({"X": "10", "Y": "20"}, s)
+        assert TomlStorage(p).load() == {"X": "10", "Y": "20"}

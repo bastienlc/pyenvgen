@@ -39,3 +39,25 @@ class TestYamlStorage:
         s = schema("X")
         YamlStorage(p).store({"X": "42"}, s)
         assert yaml.safe_load(p.read_text())["X"] == "42"
+
+
+class TestYamlLoad:
+    def test_load_nonexistent_file(self, tmp_path: Path) -> None:
+        assert YamlStorage(tmp_path / "out.yaml").load() == {}
+
+    def test_load_empty_file(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.yaml"
+        p.write_text("")
+        assert YamlStorage(p).load() == {}
+
+    def test_load_values_as_strings(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.yaml"
+        p.write_text(yaml.dump({"A": "hello", "B": 42}))
+        result = YamlStorage(p).load()
+        assert result == {"A": "hello", "B": "42"}
+
+    def test_roundtrip_store_then_load(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.yaml"
+        s = schema("X", "Y")
+        YamlStorage(p).store({"X": "10", "Y": "20"}, s)
+        assert YamlStorage(p).load() == {"X": "10", "Y": "20"}

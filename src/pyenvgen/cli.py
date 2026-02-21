@@ -19,8 +19,12 @@ from pyenvgen.validation import validate_env
 
 def _load_schema(path: Path) -> EnvSchema:
     """Load and validate a YAML schema file."""
-    with open(path) as f:
-        raw: Any = yaml.safe_load(f)
+    try:
+        with open(path) as f:
+            raw: Any = yaml.safe_load(f)
+    except FileNotFoundError:
+        print(f"Error: schema file not found: {path}")
+        sys.exit(1)
 
     if not isinstance(raw, dict):
         print(f"Error: schema file must be a YAML mapping, got {type(raw).__name__}")
@@ -69,25 +73,46 @@ def main(argv: list[str] | None = None) -> None:
         metavar="KEY=VALUE",
         help="Override a generated value (can be repeated).",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "Regenerate all values, ignoring any values already present in "
+            "the storage backend. Without this flag, existing values are "
+            "preserved and used as the base before new ones are generated."
+        ),
+    )
 
     args = parser.parse_args(argv)
 
     # 1. Load & validate schema
     schema = _load_schema(args.schema)
 
-    # 2. Parse overrides
+    # 2. Get storage backend early so we can load existing values
+    backend = get_storage(args.storage)
+
+    # 3. Parse CLI overrides
     overrides = _parse_overrides(args.override)
 
-    # 3. Generate values
-    generated = generate_env(schema, overrides=overrides)
+    # 4. Load existing values from storage and merge with CLI overrides.
+    #    This happens *before* generation so that existing values are available
+    #    to Jinja templates inside generation rules.  CLI overrides always take
+    #    precedence over stored values; --force skips loading altogether.
+    if args.force:
+        merged: dict[str, str] = overrides
+    else:
+        existing = backend.load()
+        merged = {**existing, **overrides}
 
-    # 4. Validate generated values against schema (type-cast + constraints)
+    # 5. Generate values (existing / overridden values seed the result dict)
+    generated = generate_env(schema, overrides=merged)
+
+    # 6. Validate generated values against schema (type-cast + constraints)
     try:
         validated = validate_env(schema, generated)
     except MarshmallowValidationError as exc:
         print(f"Validation error: {exc}")
         sys.exit(1)
 
-    # 5. Store output
-    backend = get_storage(args.storage)
+    # 7. Store output
     backend.store(validated, schema)

@@ -21,6 +21,18 @@ class YamlStorage:
     def __init__(self, path: Path) -> None:
         self.path = path
 
+    def load(self) -> dict[str, str]:
+        """Return existing key-value pairs from the YAML file."""
+        if not self.path.exists():
+            return {}
+        text = self.path.read_text().strip()
+        if not text:
+            return {}
+        loaded = yaml.safe_load(text)
+        if not isinstance(loaded, dict):
+            return {}
+        return {k: str(v) for k, v in loaded.items()}
+
     def store(
         self,
         values: dict[str, Any],

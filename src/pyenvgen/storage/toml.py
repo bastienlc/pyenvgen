@@ -22,6 +22,16 @@ class TomlStorage:
     def __init__(self, path: Path) -> None:
         self.path = path
 
+    def load(self) -> dict[str, str]:
+        """Return existing key-value pairs from the TOML file."""
+        if not self.path.exists():
+            return {}
+        text = self.path.read_text().strip()
+        if not text:
+            return {}
+        data = tomllib.loads(text)
+        return {k: str(v) for k, v in data.items()}
+
     def store(
         self,
         values: dict[str, Any],

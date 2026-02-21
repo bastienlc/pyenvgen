@@ -72,3 +72,30 @@ class TestDotEnvStorage:
         s = schema("X")
         DotEnvStorage(p).store({"X": "1"}, s)
         assert p.exists()
+
+
+class TestDotEnvLoad:
+    def test_load_nonexistent_file(self, tmp_path: Path) -> None:
+        assert DotEnvStorage(tmp_path / ".env").load() == {}
+
+    def test_load_simple_values(self, tmp_path: Path) -> None:
+        p = tmp_path / ".env"
+        p.write_text("FOO=bar\nBAZ=qux\n")
+        assert DotEnvStorage(p).load() == {"FOO": "bar", "BAZ": "qux"}
+
+    def test_load_skips_comments_and_blanks(self, tmp_path: Path) -> None:
+        p = tmp_path / ".env"
+        p.write_text("# comment\n\nFOO=hello\n")
+        assert DotEnvStorage(p).load() == {"FOO": "hello"}
+
+    def test_load_export_prefix(self, tmp_path: Path) -> None:
+        p = tmp_path / ".env"
+        p.write_text("export FOO=bar\n")
+        result = DotEnvStorage(p).load()
+        assert result.get("FOO") == "bar"
+
+    def test_roundtrip_store_then_load(self, tmp_path: Path) -> None:
+        p = tmp_path / ".env"
+        s = schema("A", "B")
+        DotEnvStorage(p).store({"A": "1", "B": "2"}, s)
+        assert DotEnvStorage(p).load() == {"A": "1", "B": "2"}

@@ -10,6 +10,10 @@ from pyenvgen.schema import EnvSchema
 class StdoutStorage:
     """Print environment variables to standard output."""
 
+    def load(self) -> dict[str, str]:
+        """No existing values to load from stdout."""
+        return {}
+
     def store(
         self,
         values: dict[str, Any],

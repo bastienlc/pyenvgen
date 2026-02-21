@@ -18,3 +18,8 @@ class TestStdoutStorage:
         s = schema("A")
         StdoutStorage().store({}, s)
         assert capsys.readouterr().out == ""
+
+
+class TestStdoutLoad:
+    def test_load_always_empty(self) -> None:
+        assert StdoutStorage().load() == {}

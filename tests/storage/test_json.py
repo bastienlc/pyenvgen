@@ -39,3 +39,25 @@ class TestJsonStorage:
         s = schema("X")
         JsonStorage(p).store({"X": "1"}, s)
         assert json.loads(p.read_text())["X"] == "1"
+
+
+class TestJsonLoad:
+    def test_load_nonexistent_file(self, tmp_path: Path) -> None:
+        assert JsonStorage(tmp_path / "out.json").load() == {}
+
+    def test_load_empty_file(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.json"
+        p.write_text("")
+        assert JsonStorage(p).load() == {}
+
+    def test_load_values_as_strings(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.json"
+        p.write_text(json.dumps({"A": "hello", "B": 42}))
+        result = JsonStorage(p).load()
+        assert result == {"A": "hello", "B": "42"}
+
+    def test_roundtrip_store_then_load(self, tmp_path: Path) -> None:
+        p = tmp_path / "out.json"
+        s = schema("X", "Y")
+        JsonStorage(p).store({"X": "10", "Y": "20"}, s)
+        assert JsonStorage(p).load() == {"X": "10", "Y": "20"}
