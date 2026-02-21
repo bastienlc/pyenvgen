@@ -72,14 +72,14 @@ variables:
       rule: command
       command: "git rev-parse --short HEAD"
 
-  # --- template rule: compose values from already-generated variables ---
+  # --- default rule with Jinja: compose values from already-generated variables ---
 
   DATABASE_URL:
     type: str
     description: "Full database connection URL built from host and port"
     generation:
-      rule: template
-      template: "postgres://app:password@{{ APP_NAME }}:5432/app"
+      rule: default
+      value: "postgres://app:password@{{ APP_NAME }}:5432/app"
 
   # --- openssl rule: generate cryptographic material ---
 

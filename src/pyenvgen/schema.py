@@ -80,28 +80,33 @@ class ValidationRules(BaseModel):
 
 
 class DefaultGeneration(BaseModel):
-    """Use a literal default value specified in the schema."""
+    """Use a default value specified in the schema.
+
+    The ``value`` string is rendered as a Jinja2 template before being
+    returned, so it may reference other already-generated variables.
+    """
 
     rule: Literal["default"] = "default"
     value: str
 
 
 class CommandGeneration(BaseModel):
-    """Generate value by executing a shell command (placeholder for future)."""
+    """Generate value by executing a shell command.
+
+    The ``command`` string is rendered as a Jinja2 template before execution,
+    so it may reference other already-generated variables.
+    """
 
     rule: Literal["command"] = "command"
     command: str
 
 
-class TemplateGeneration(BaseModel):
-    """Generate value by rendering a Jinja2 template (placeholder for future)."""
-
-    rule: Literal["template"] = "template"
-    template: str
-
-
 class OpenSSLGeneration(BaseModel):
-    """Generate value using an OpenSSL command (placeholder for future)."""
+    """Generate value using an OpenSSL command.
+
+    The ``command`` string and any string values inside ``args`` are rendered
+    as Jinja2 templates before execution.
+    """
 
     rule: Literal["openssl"] = "openssl"
     command: str
@@ -109,7 +114,7 @@ class OpenSSLGeneration(BaseModel):
 
 
 GenerationRule = Annotated[
-    Union[DefaultGeneration, CommandGeneration, TemplateGeneration, OpenSSLGeneration],
+    Union[DefaultGeneration, CommandGeneration, OpenSSLGeneration],
     Field(discriminator="rule"),
 ]
 

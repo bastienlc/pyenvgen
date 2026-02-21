@@ -21,9 +21,15 @@ Validation rules are a simple YAML representation of the validation rules suppor
 
 ### Generation Rules
 
+All generation rules support **Jinja2 templating**: any string field in a rule
+is rendered as a Jinja2 template against the values already generated so far,
+before the rule executes.
+
+For example, you can write `value: "postgres://{{ HOST }}:{{ PORT }}/app"` in
+a `default` rule, or embed `{{ VAR }}` inside a `command` string.
+
 - `default`: Use a default value specified in the schema.
 - `command`: Generate the value by executing a shell command and using its output.
-- `template`: Generate the value by rendering a Jinja2 template, which can include references to other environment variables.
 - `openssl`: Use any OpenSSL command to generate the value (uses [pyopenssl](https://github.com/pyca/pyopenssl)). Arguments for the OpenSSL command can be specified in the schema.
 
 ### Storage Rules

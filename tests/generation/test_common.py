@@ -26,9 +26,9 @@ class TestTopologicalOrder:
         order = _topological_order(schema)
         assert set(order) == {"A", "B", "C"}
 
-    def test_template_after_dependency(self) -> None:
+    def test_jinja_in_default_after_dependency(self) -> None:
         schema = self._schema({
-            "URL": {"generation": {"rule": "template", "template": "http://{{ HOST }}:{{ PORT }}"}},
+            "URL": {"generation": {"rule": "default", "value": "http://{{ HOST }}:{{ PORT }}"}},
             "HOST": {"generation": {"rule": "default", "value": "localhost"}},
             "PORT": {"generation": {"rule": "default", "value": "8080"}},
         })
@@ -36,10 +36,10 @@ class TestTopologicalOrder:
         assert order.index("HOST") < order.index("URL")
         assert order.index("PORT") < order.index("URL")
 
-    def test_chained_templates(self) -> None:
+    def test_chained_jinja_in_default(self) -> None:
         schema = self._schema({
-            "C": {"generation": {"rule": "template", "template": "{{ B }}-c"}},
-            "B": {"generation": {"rule": "template", "template": "{{ A }}-b"}},
+            "C": {"generation": {"rule": "default", "value": "{{ B }}-c"}},
+            "B": {"generation": {"rule": "default", "value": "{{ A }}-b"}},
             "A": {"generation": {"rule": "default", "value": "a"}},
         })
         order = _topological_order(schema)
@@ -47,15 +47,15 @@ class TestTopologicalOrder:
 
     def test_circular_dependency_raises(self) -> None:
         schema = self._schema({
-            "A": {"generation": {"rule": "template", "template": "{{ B }}"}},
-            "B": {"generation": {"rule": "template", "template": "{{ A }}"}},
+            "A": {"generation": {"rule": "default", "value": "{{ B }}"}},
+            "B": {"generation": {"rule": "default", "value": "{{ A }}"}},
         })
         with pytest.raises(CircularDependencyError):
             _topological_order(schema)
 
     def test_self_reference_raises(self) -> None:
         schema = self._schema({
-            "A": {"generation": {"rule": "template", "template": "{{ A }}"}},
+            "A": {"generation": {"rule": "default", "value": "{{ A }}"}},
         })
         with pytest.raises(CircularDependencyError):
             _topological_order(schema)
@@ -78,19 +78,19 @@ class TestGenerateEnv:
         })
         assert generate_env(schema, overrides={"A": "override"}) == {"A": "override"}
 
-    def test_template_resolves_with_generated_values(self) -> None:
+    def test_jinja_in_default_resolves_with_generated_values(self) -> None:
         schema = self._schema({
             "HOST": {"generation": {"rule": "default", "value": "db"}},
             "PORT": {"generation": {"rule": "default", "value": "5432"}},
-            "DSN": {"generation": {"rule": "template", "template": "postgres://{{ HOST }}:{{ PORT }}/app"}},
+            "DSN": {"generation": {"rule": "default", "value": "postgres://{{ HOST }}:{{ PORT }}/app"}},
         })
         result = generate_env(schema)
         assert result["DSN"] == "postgres://db:5432/app"
 
-    def test_template_uses_override(self) -> None:
+    def test_jinja_in_default_uses_override(self) -> None:
         schema = self._schema({
             "HOST": {"generation": {"rule": "default", "value": "localhost"}},
-            "DSN": {"generation": {"rule": "template", "template": "postgres://{{ HOST }}/app"}},
+            "DSN": {"generation": {"rule": "default", "value": "postgres://{{ HOST }}/app"}},
         })
         result = generate_env(schema, overrides={"HOST": "prod-db"})
         assert result["DSN"] == "postgres://prod-db/app"
@@ -111,8 +111,8 @@ class TestGenerateEnv:
 
     def test_circular_dep_raises_in_generate_env(self) -> None:
         schema = self._schema({
-            "A": {"generation": {"rule": "template", "template": "{{ B }}"}},
-            "B": {"generation": {"rule": "template", "template": "{{ A }}"}},
+            "A": {"generation": {"rule": "default", "value": "{{ B }}"}},
+            "B": {"generation": {"rule": "default", "value": "{{ A }}"}},
         })
         with pytest.raises(CircularDependencyError):
             generate_env(schema)
