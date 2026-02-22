@@ -1,6 +1,6 @@
 [project]
 name = "pyenvgen"
-version = "0.3.0"
+version = "0.4.0"
 description = "Python tool to generate environment variables from schemas"
 readme = "README.md"
 authors = [
