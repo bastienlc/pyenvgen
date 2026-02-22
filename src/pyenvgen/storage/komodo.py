@@ -2,13 +2,87 @@
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 from typing import Any
 
-import tomli_w
-
 from pyenvgen.schema import EnvSchema
+
+# Characters that must be escaped inside a TOML basic string.
+_TOML_ESCAPES = str.maketrans(
+    {
+        "\\": "\\\\",
+        '"': '\\"',
+        "\n": "\\n",
+        "\r": "\\r",
+        "\t": "\\t",
+    }
+)
+
+
+def _toml_str(s: str) -> str:
+    """Return *s* as a quoted TOML basic string."""
+    return '"' + s.translate(_TOML_ESCAPES) + '"'
+
+
+def _variable_entry(name: str, value: str) -> str:
+    """Render one [[variable]] array-of-tables entry."""
+    return f"[[variable]]\nname = {_toml_str(name)}\nvalue = {_toml_str(value)}"
+
+
+def _strip_variable_sections(text: str) -> str:
+    """Remove all *variable* definitions from raw TOML text.
+
+    Handles both the array-of-tables form (``[[variable]]``) and the inline
+    form (``variable = [...]``) so that files written by older versions of
+    pyenvgen are also handled correctly.  All other content is left verbatim.
+    """
+    lines = text.splitlines(keepends=True)
+    result: list[str] = []
+    # State: "none" | "array_of_tables" | "inline_array"
+    mode = "none"
+    bracket_depth = 0
+
+    for line in lines:
+        stripped = line.strip()
+
+        if mode == "none":
+            if stripped.startswith("[[") and re.match(
+                r"^\[\[\s*variable\s*\]\]", stripped
+            ):
+                mode = "array_of_tables"
+                # Don't append – skip this line.
+            elif re.match(r"^variable\s*=", stripped):
+                mode = "inline_array"
+                bracket_depth = stripped.count("[") - stripped.count("]")
+                if bracket_depth <= 0:
+                    mode = "none"
+                # Don't append – skip this line.
+            else:
+                result.append(line)
+
+        elif mode == "array_of_tables":
+            # Stay in this mode until we hit a different TOML header.
+            if stripped.startswith("[["):
+                if re.match(r"^\[\[\s*variable\s*\]\]", stripped):
+                    # Another [[variable]] entry – still in array_of_tables mode.
+                    pass
+                else:
+                    mode = "none"
+                    result.append(line)
+            elif stripped.startswith("["):
+                mode = "none"
+                result.append(line)
+            # Otherwise skip lines that belong to the current [[variable]] entry.
+
+        elif mode == "inline_array":
+            bracket_depth += stripped.count("[") - stripped.count("]")
+            if bracket_depth <= 0:
+                mode = "none"
+            # Skip continuation lines of the inline array.
+
+    return "".join(result)
 
 
 class KomodoStorage:
@@ -43,17 +117,19 @@ class KomodoStorage:
 
         public = _public_values(values, schema)
 
-        existing: dict[str, Any] = {}
+        # Read the existing raw text so we can preserve its exact formatting.
+        existing_text = ""
         if self.path.exists():
-            text = self.path.read_text().strip()
-            if text:
-                existing = tomllib.loads(text)
+            existing_text = self.path.read_text()
 
-        # Convert the public values dict to the komodo format
-        variables = [{"name": k, "value": str(v)} for k, v in public.items()]
+        # Strip only the [[variable]] sections; everything else is kept verbatim.
+        base_text = _strip_variable_sections(existing_text).rstrip()
 
-        # Update the existing data with the new variables array
-        existing["variable"] = variables
+        # Serialize each variable as its own [[variable]] entry.
+        new_entries = [_variable_entry(k, str(v)) for k, v in public.items()]
+
+        parts = ([base_text] if base_text else []) + new_entries
+        result = "\n\n".join(parts) + "\n"
 
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_bytes(tomli_w.dumps(existing).encode())
+        self.path.write_text(result)

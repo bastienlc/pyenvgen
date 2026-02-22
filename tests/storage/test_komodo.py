@@ -45,6 +45,24 @@ class TestKomodoStorage:
         assert len(variables) == 1
         assert {"name": "A", "value": "new"} in variables
 
+    def test_preserves_array_of_tables_syntax(self, tmp_path: Path) -> None:
+        """Regression: [[unrelated]] must stay as array-of-tables, not inline."""
+        p = tmp_path / "out.toml"
+        p.write_text("[[unrelated]]\ntest = 2\n")
+
+        s = schema("A")
+        KomodoStorage(p).store({"A": "1"}, s)
+
+        raw = p.read_text()
+        # The [[unrelated]] section must be preserved verbatim as array-of-tables.
+        assert "[[unrelated]]" in raw
+        # Must not have been mangled into inline-array form.
+        assert "unrelated = [" not in raw
+        # Value should be correct too.
+        data = tomllib.loads(raw)
+        assert data["unrelated"] == [{"test": 2}]
+        assert {"name": "A", "value": "1"} in data["variable"]
+
     def test_internal_vars_excluded(self, tmp_path: Path) -> None:
         p = tmp_path / "out.toml"
         s = schema("PUB", "PRIV", internal={"PRIV"})
