@@ -18,14 +18,15 @@ pip install pyenvgen
 ## Usage
 
 ```bash
-pyenvgen <schema.yaml> [-s STORAGE] [-o KEY=VALUE ...] [--force]
+pyenvgen <schema.yaml> [-s STORAGE] [-b BACKEND] [-o KEY=VALUE ...] [--force]
 ```
 
-| Flag               | Description                                            |
-| ------------------ | ------------------------------------------------------ |
-| `-s`, `--storage`  | Storage backend (default: `stdout`)                    |
-| `-o`, `--override` | Override a value via `KEY=VALUE` (repeatable)          |
-| `--force`          | Regenerate all values, ignoring existing stored values |
+| Flag               | Description                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| `-s`, `--storage`  | Storage (default: `stdout`), path to a file to store output to.                          |
+| `-b`, `--backend`  | Storage backend, when the file extension is ambiguous (e.g. `komodo` vs `toml` backend). |
+| `-o`, `--override` | Override a value via `KEY=VALUE` (repeatable)                                            |
+| `--force`          | Regenerate all values, ignoring existing stored values                                   |
 
 ```bash
 # Print to stdout
@@ -91,13 +92,14 @@ Backed by [marshmallow](https://github.com/marshmallow-code/marshmallow).
 
 ### Storage backends
 
-| Value    | Description              |
-| -------- | ------------------------ |
-| `stdout` | Print to standard output |
-| `.env`   | Read/write a `.env` file |
-| `json`   | Read/write a JSON file   |
-| `toml`   | Read/write a TOML file   |
-| `yaml`   | Read/write a YAML file   |
+| Value    | Description                                                          |
+| -------- | -------------------------------------------------------------------- |
+| `stdout` | Print to standard output                                             |
+| `.env`   | Read/write a `.env` file                                             |
+| `json`   | Read/write a JSON file                                               |
+| `toml`   | Read/write a TOML file                                               |
+| `yaml`   | Read/write a YAML file                                               |
+| `komodo` | Read/write a [Komodo](https://github.com/moghtech/komodo)-style TOML |
 
 ### Special properties
 

@@ -16,6 +16,7 @@ from typing import Any, Protocol
 from pyenvgen.schema import EnvSchema
 from pyenvgen.storage.dotenv import DotEnvStorage
 from pyenvgen.storage.json import JsonStorage
+from pyenvgen.storage.komodo import KomodoStorage
 from pyenvgen.storage.stdout import StdoutStorage
 from pyenvgen.storage.toml import TomlStorage
 from pyenvgen.storage.yaml import YamlStorage
@@ -60,17 +61,35 @@ _FILE_EXTENSIONS: dict[str, type] = {
 }
 
 
-def get_storage(backend: str) -> StorageBackend:
+def get_storage(backend: str, backend_type: str | None = None) -> StorageBackend:
     """Return the storage backend for the given name or file path.
 
     Pass ``"stdout"`` to print to standard output, or a file path whose
     extension determines the format (``*.env``, ``*.json``, ``*.toml``,
     ``*.yaml`` / ``*.yml``).
+
+    Use ``backend_type`` to explicitly specify the format (e.g., "komodo")
+    when the file extension is ambiguous or non-standard.
     """
     if backend == "stdout":
         return StdoutStorage()
 
     path = Path(backend)
+
+    # If backend_type is explicitly provided, use it
+    if backend_type:
+        if backend_type == "komodo":
+            return KomodoStorage(path)
+        elif backend_type == "dotenv":
+            return DotEnvStorage(path)
+        elif backend_type == "json":
+            return JsonStorage(path)
+        elif backend_type == "toml":
+            return TomlStorage(path)
+        elif backend_type == "yaml":
+            return YamlStorage(path)
+        else:
+            raise ValueError(f"Unknown backend type: {backend_type}")
 
     # Match on the full filename for dotenv files (e.g. ".env", ".env.local")
     # before falling back to the suffix.
@@ -94,6 +113,7 @@ __all__ = [
     "StdoutStorage",
     "DotEnvStorage",
     "JsonStorage",
+    "KomodoStorage",
     "TomlStorage",
     "YamlStorage",
     "get_storage",

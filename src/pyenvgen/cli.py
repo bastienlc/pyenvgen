@@ -67,6 +67,12 @@ def main(argv: list[str] | None = None) -> None:
         help="Storage backend (default: stdout).",
     )
     parser.add_argument(
+        "-b",
+        "--backend",
+        choices=["dotenv", "json", "toml", "yaml", "komodo"],
+        help="Explicitly specify the storage backend type (useful for ambiguous file extensions).",
+    )
+    parser.add_argument(
         "-o",
         "--override",
         action="append",
@@ -89,7 +95,7 @@ def main(argv: list[str] | None = None) -> None:
     schema = _load_schema(args.schema)
 
     # 2. Get storage backend early so we can load existing values
-    backend = get_storage(args.storage)
+    backend = get_storage(args.storage, args.backend)
 
     # 3. Parse CLI overrides
     overrides = _parse_overrides(args.override)
