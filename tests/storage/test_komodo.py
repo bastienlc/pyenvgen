@@ -108,3 +108,11 @@ class TestKomodoLoad:
         p.write_bytes(tomli_w.dumps(data).encode())
         result = KomodoStorage(p).load()
         assert result == {}
+
+    def test_variable_without_value(self, tmp_path: Path) -> None:
+        """Test loading a [[variable]] entry that lacks a 'value' field."""
+        p = tmp_path / "out.toml"
+        data = {"variable": [{"name": "A"}, {"name": "B", "value": "2"}]}
+        p.write_bytes(tomli_w.dumps(data).encode())
+        result = KomodoStorage(p).load()
+        assert result == {"B": "2"}

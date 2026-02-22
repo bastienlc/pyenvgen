@@ -106,7 +106,11 @@ class KomodoStorage:
             return {}
         data = tomllib.loads(text)
         variables = data.get("variable", [])
-        return {entry["name"]: str(entry["value"]) for entry in variables}
+        return {
+            entry["name"]: str(entry["value"])
+            for entry in variables
+            if "value" in entry
+        }
 
     def store(
         self,
